@@ -1,0 +1,282 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <title>3. Mājasdarbs</title>
+        <style>
+            #snakeCanvas
+            {
+                border:1px solid black;
+                box-shadow: 0 0 0 16px black;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="text-center">
+            <h2 class="mb-4 pb-4 display-4">Tīmekļa programmēšana - 3. mājasdarbs</h2>
+            <div class="row m-4 p-4">
+                <div class="col">
+                <canvas id="snakeCanvas" width="512" height="512">Your browser does not support the canvas element.</canvas>
+                <script>
+                    const blockSize = 16;
+                    var timeout = 50;
+                    var canvas;
+                    var ctx;
+
+                    // mainigie
+                    var canvasWidth;
+                    var canvasHeight;
+                    var headPosX;
+                    var headPosY;
+                    var applePosX;
+                    var applePosY;
+                    var score;
+                    var playing;
+                    var direction;
+                    var movedThisFrame;
+                    var snake;
+                    
+                    window.onload = function()
+                    {
+                        canvas = document.getElementById('snakeCanvas');
+                        var slider = document.getElementById("difficultySlider");
+                        var difficulty = 1;
+                        slider.value = difficulty;
+                        document.getElementById('output').innerHTML = difficulty;
+
+                        slider.oninput = function() {
+                            difficulty = slider.value;
+                            timeout = 10 * (10 - difficulty);
+                            document.getElementById('output').innerHTML = difficulty;
+                        };
+
+                        ctx = canvas.getContext('2d');
+                        
+                        canvasWidth = canvas.width;
+                        canvasHeight = canvas.height;
+
+                        //startGame();
+                    }
+
+                    function startGame()
+                    {
+                        // declare starting variables
+                        headPosX = canvasWidth / 2;
+                        headPosY = canvasHeight / 2;
+                        snake = [];
+                        snake.push({'X':headPosX, 'Y':headPosY});
+                        score = 1;
+                        playing = true;
+                        direction = 'left';
+
+                        // spawn initial
+                        spawnApple();
+                        frame();
+                    }
+
+                    // Izcils event handler pec piemera: https://stackoverflow.com/questions/16345870/keydown-keyup-events-for-specific-keys
+                    //{
+                    // nodefine funkcijas, kuras izpildisies pie pogu nospiesanas
+                    const Moves = {
+                    turnUp()  {
+                        if(direction !== 'up' && direction !== 'down' && !movedThisFrame)
+                        {
+                        movedThisFrame = true;
+                        direction = 'up';
+                        }
+                    },
+                    turnDown()  {
+                        if(direction !== 'up' && direction !== 'down' && !movedThisFrame)
+                        {   
+                        movedThisFrame = true;
+                        direction = 'down';
+                        }
+                    },
+                    turnLeft()  {
+                        if(direction !== 'left' && direction !== 'right' && !movedThisFrame)
+                        {
+                            movedThisFrame = true;
+                            direction = 'left';
+                        }
+                    },
+                    turnRight()  {
+                        if(direction !== 'left' && direction !== 'right' && !movedThisFrame)
+                        {
+                            movedThisFrame = true;
+                            direction = 'right';
+                        }
+                    },
+                    };
+                    
+                    // define pogas
+                    const keyAction = {
+                        w: {keydown: Moves.turnUp},
+                        s: {keydown: Moves.turnDown},
+                        a: {keydown: Moves.turnLeft},
+                        d: {keydown: Moves.turnRight},
+
+                    };
+
+                    // Nelauj vairrakkart uzspiest pogu
+                    const keyHandler = (ev) => {
+                    if (ev.repeat) return;                             
+                    if (!(ev.key in keyAction) || !(ev.type in keyAction[ev.key])) return;
+                    keyAction[ev.key][ev.type]();
+                    };
+
+                    // katrai pogai izveido eventListener, kas tos savieno ar funkcijam
+                    ['keydown', 'keyup'].forEach((evType) => {
+                    document.body.addEventListener(evType, keyHandler);
+                    });
+                    //}
+                    
+                    function frame()
+                    {
+                        // sakuma izdzesh visu canvas
+                        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                        
+                        // punktu uzraksts
+                        ctx.fillStyle = 'black';
+                        ctx.fillText('Score: ' + score , canvasWidth / 2, 16); 
+
+                        ctx.textAlign="center";
+                        ctx.font = "16px Arial";
+                        
+                        // atkariba no virziena, maina galvas koordinatas
+                        switch(direction)
+                        {
+                            case 'left':
+                            headPosX-=blockSize;
+                            break;
+                            case 'right':
+                            headPosX+=blockSize;
+                            break;
+                            case 'up':
+                            headPosY-=blockSize;
+                            break;
+                            case 'down':
+                            headPosY+=blockSize;
+                            break;   
+                        }
+                        
+                        // Atjauno visa kermena pozicijas
+                        for(i = snake.length - 1; i > 0; i--)
+                            snake[i] = snake[i-1];
+                        
+                        snake[0] = {'X':headPosX, 'Y':headPosY};
+                        
+                        // Uzzime katru kermena dalu
+                        snake.forEach(part => ctx.fillRect(part['X'], part['Y'], blockSize, blockSize));
+
+                        // Parbauda - neesam ietriekusies siena
+                        if(headPosX > canvasWidth - blockSize)
+                        {
+                            console.log("X out of bounds ->")
+                            playing = false;
+                        }
+                        if(headPosX < 0)
+                        {
+                            console.log("X out of bounds <-")
+                            playing = false;
+                        }
+                        if(headPosY > canvasHeight - blockSize)
+                        {
+                            console.log("Y out of bounds v")
+                            playing = false;
+                        }
+                        if(headPosY < 0)
+                        {
+                            console.log("Y out of bounds ^")
+                            playing = false;
+                        }
+
+                        // Parbaude - neesam ietriekusies sevii
+                        for(i = 1; i < snake.length; i++)
+                        {
+                            if(snake[i]['X'] == headPosX && snake[i]['Y'] == headPosY)
+                            {
+                                console.log('You hit yourself!');
+                                playing = false;
+                            }
+                        }
+                        
+                        if(!playing)
+                            return
+
+                        // Parbaude - neesam apedusi abolu
+                        if(headPosX === applePosX && headPosY == applePosY)
+                        {
+                            score+=1;
+                            snake.push({'X':applePosX, 'Y':applePosY});
+                            spawnApple();
+                        }
+                        
+                        // uzzimejam abolu
+                        // abola gradients
+                        appleGradient=ctx.createRadialGradient(applePosX + blockSize / 2, applePosY + blockSize / 2, 1, applePosX + blockSize / 2, applePosY + blockSize / 2, 10);
+                        
+                        appleGradient.addColorStop(0,"red");
+                        appleGradient.addColorStop(1,"green");
+
+                        ctx.fillStyle=appleGradient;
+                        ctx.beginPath();
+                        ctx.arc(applePosX + blockSize / 2, applePosY + blockSize / 2, 8, 0, 2 * Math.PI);
+                        ctx.fill();
+
+                        movedThisFrame = false;
+                        setTimeout(frame, timeout);
+                    }
+                    
+                    function spawnApple()
+                    {
+                        applePosX = Math.floor(Math.random() * 32) * 16;
+                        applePosY = Math.floor(Math.random() * 32) * 16;
+                        console.log('newApple: (' + applePosX + ', ' + applePosY +')')
+                    }
+                    
+                </script>
+                </div>
+                <div class="col">
+                    <h2 class="display-4 p-3">Snake Game</h2>
+                    <div class="row">
+                        <div class="col  text-left">
+                            <h2 class="lead p-3" style="font-size:30px;"><strong>Controls:</strong></h2>
+                            <table class="table m-auto lead" style="font-size:20px;">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Button</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                <td>w</td>
+                                <td>Change direction to up</td>
+                                </tr>
+                                <tr>
+                                <td>a</td>
+                                <td>Change direction to left</td>
+                                </tr>
+                                <tr>
+                                <td>s</td>
+                                <td>Change direction to down</td>
+                                </tr>
+                                <tr>
+                                <td>d</td>
+                                <td>Change direction to right</td>
+                                </tr>
+                            </tbody>
+                            </table>
+                        </div>
+                        <div class="col">
+                            <h2 class="lead p-3" style="font-size:30px;"><strong>Difficulty:</strong><p id="output">6</p></h2>
+                            <div class="slidecontainer">
+                                <input id="difficultySlider" type="range" min="1" max="7" value="1">
+                            </div>
+                            <button onclick="startGame()" type="button" class="btn btn-secondary">StartGame</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+</html>
